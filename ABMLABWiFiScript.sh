@@ -8,7 +8,6 @@ LOGFILE="/home/debian/abmlab-wifi-log.txt"
 exec 3>> $LOGFILE
 
 # default data sink
-#DATASINK="130.63.38.107"
 DATASINK="www.google.com"
 
 # get an active wlan
