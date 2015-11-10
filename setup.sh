@@ -24,9 +24,12 @@ TEDITOR=nano
 HOME_DIR="/home/debian"
 CUR_DIR="$(pwd)"
 OPENBEACONNG_DIR="Code"
-OPENBEACONNG_CLONE_DIR="openbeacon-ng"
-OPENBEACONNG_URL="https://github.com/meriac/openbeacon-ng.git"
-OPENBEACON_FW_DIR="openbeacon-ng/host/openbeacon-cape"
+OPENBEACONNG_CLONE_DIR="openbeacon-mn"
+OPENBEACONNG_URL="https://github.com/ABMLab/openbeacon-mn.git"
+OPENBEACON_FW_DIR="openbeacon-mn/host/openbeacon-cape"
+#OPENBEACONNG_CLONE_DIR="openbeacon-ng"
+#OPENBEACONNG_URL="https://github.com/meriac/openbeacon-ng.git"
+#OPENBEACON_FW_DIR="openbeacon-ng/host/openbeacon-cape"
 
 # Specific Scripts
 ABMLAB_SCR=ABMLABScript.sh
@@ -89,6 +92,7 @@ if [ "$key" == 'y' ]; then
 		sudo apt-get -y update
 		sudo apt-get -y install network-manager
 		sudo apt-get -y install net-tools
+		sudo apt-get -y install libpcap-dev
 	fi
 	
 	read -r -p "Proceed to wifi network setup -recommended for the new devices- [y/n]?" key
@@ -125,7 +129,7 @@ if [ "$key" == 'y' ]; then
 	NSTEP=$[$NSTEP+1]
 	echo ""
 	echo "** Step $NSTEP: getting and compiling openbeacon_forwarder ... "
-	echo "Cloning openbeacon-ng from $OPENBEACONNG_URL ..."
+	echo "Cloning openbeacon from $OPENBEACONNG_URL ..."
 	rm -rf $HOME_DIR/$OPENBEACONNG_DIR /$OPENBEACONNG_CLONE_DIR
 	[ ! -d $HOME_DIR/$OPENBEACONNG_DIR ] && mkdir -p $HOME_DIR/$OPENBEACONNG_DIR || :
 	cd $HOME_DIR/$OPENBEACONNG_DIR

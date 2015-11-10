@@ -233,7 +233,7 @@ if [ "$key" == 'y' ]; then
 	$IWCONFIG $WLAN essid "$ESSID" 2> /dev/null
 	if [ $? -ne 0 ]; then
 		echo "Cannot $IWCONFIG $WLAN essid $ESSID"
-		exit
+#		exit
 	fi
 
 #	$IWCONFIG $WLAN rate "$RATE" 2> /dev/null
@@ -247,14 +247,14 @@ if [ "$key" == 'y' ]; then
 		$IWCONFIG $WLAN key "$WEP" 2> /dev/null
 		if [ $? -ne 0 ] ;then
 			echo "Cannot $IWCONFIG $WLAN key $WEP"
-			exit
+#			exit
 		fi
 	fi
 
 	$DHCLIENT $WLAN 2> /dev/null
 	if [ $? -ne 0 ]; then
 		echo "Cannot $DHCLIENT $WLAN"
-		exit
+#		exit
 	fi
 
 	# ------------------------------------------------------------------------------------------------------------------------------------------------------
