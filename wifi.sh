@@ -244,9 +244,9 @@ if [ "$key" == 'y' ]; then
 
 	# now set the key, if necessary
 	if [ "$WEP" != "" ]; then
-		$IWCONFIG $WLAN key "$WEP" 2> /dev/null
+		$IWCONFIG $WLAN key s:"$WEP" 2> /dev/null
 		if [ $? -ne 0 ] ;then
-			echo "Cannot $IWCONFIG $WLAN key $WEP"
+			echo "Cannot $IWCONFIG $WLAN key s:$WEP"
 #			exit
 		fi
 	fi
