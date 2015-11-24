@@ -150,13 +150,11 @@ if [ "$key" == 'y' ]; then
 	echo ""
 	echo "** Step $NSTEP: checking and setting up wlan ... "
 	echo ""
-	if [ "$WLAN" = "" ]; then
-		if [[ $EMMC_OVERLAY = \#* ]]; then
-			sudo sed "s/$EMMC_OVERLAY/${EMMC_OVERLAY:1}/g" $UENV > tmp.sh && mv tmp.sh  $UENV
-			#rm ./tmp.sh
-			echo "** No wlan detected."
-			restart_device 1
-		fi
+	if [ "$WLAN" = "" ] || [[ $EMMC_OVERLAY = \#* ]]; then
+		sudo sed "s/$EMMC_OVERLAY/${EMMC_OVERLAY:1}/g" $UENV > tmp.sh && mv tmp.sh  $UENV
+		#rm ./tmp.sh
+		echo "** No wlan detected."
+		restart_device 1
 	fi
 	
 	# ------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -44,8 +44,7 @@ sleep 5
 
 let RETRIES=RETRIES+1
 
-# /home/debian/Code/openbeacon-ng/host/openbeacon-cape/openbeacon_forwarder $DATASINK >&3
-sudo /home/debian/Code/openbeacon-mn/host/openbeacon-cape/openbeacon_forwarder $DATASINK >&3
+/home/debian/Code/openbeacon-ng/host/openbeacon-cape/openbeacon_forwarder $DATASINK >&3
 
 done
 
