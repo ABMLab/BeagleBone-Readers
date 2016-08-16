@@ -69,10 +69,8 @@ show_menus() {
 	echo "-------------------------------------------------------------"
 	echo " Make sure that this script is running on the correct device."
 	echo "-------------------------------------------------------------"
-	echo ""
-	echo "~~~~~~~~~~~~~~~~~~~~~"	
 	echo " M A I N - M E N U"
-	echo "~~~~~~~~~~~~~~~~~~~~~"
+	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	echo "1. Initial setup for network tools"
 	echo "2. Wifi setup"
 	echo "3. Forwarder code setup"
@@ -90,7 +88,7 @@ show_menus() {
 # Exit when user the user select 3 form the menu option.
 read_options(){
 	local choice
-	read -p "Enter choice [ 1 - 3] " choice
+	read -p "Enter choice [ 0 - 8] " choice
 	case $choice in
 		1) step_update ;;
 		2) step_wifi ;;
@@ -106,10 +104,12 @@ read_options(){
 }
 
 step_auto(){
-	step_update ;;
-	step_wifi ;;
-	step_forwarder ;;
-	step_scripts ;;
+	step_update 
+	step_wifi
+	step_forwarder
+	step_scripts
+	echo "Setup is completed. Shutting down the device in 2 seconds ..."
+	sleep 2
 	sudo shutdown now
 }
 
@@ -160,7 +160,7 @@ step_forwarder(){
 	echo ""
 	echo "** Step $NSTEP: cloning the forwarder code from git repo and compiling openbeacon_forwarder ... "
 
-	step_check_internet;;
+	step_check_internet
 
 	if [ '$?' == '1' ]; then
 		echo "Cloning openbeacon from $OPENBEACONNG_URL ..."
@@ -280,12 +280,12 @@ step_check_network(){
 	NSTEP=$[$NSTEP+1]
 	echo ""
 	echo "** Step $NSTEP: checking to reach and address over the current network ... "
-	echo ""
-	echo "The IP address to check (format: 192.168.1.1):"
+	echo "You can enter www.google.com to check the internet connectivity or "
+	echo "an IP address to check (format: 192.168.1.1):"
 		read addrs
 		sudo sed "s/$DEFAULTDATASINKWIFI/\"$NEWDATASINK\"/g" ./$ABMLABWIFI_SCR > ./tmp.sh && mv ./tmp.sh $ABMLAB_SCR_DIR/$ABMLABWIFI_SCR
 
-	ping $addrs -c5
+	ping -c4 $addrs
 	if [ $? -eq 0 ]; then
 		echo "*** Successful ***"
 		return 1
@@ -307,12 +307,13 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
-echo "---------------------------------------------------------------"
-echo "Setting up BeagleBone Black for test at ABM-Lab York University"
-echo "---------------------------------------------------------------"
-echo "Make sure that this script is running on the correct device."
-echo ""
-read -r -p "To continue press [y] or any other key to cancel ..." key
+#echo "---------------------------------------------------------------"
+#echo "Setting up BeagleBone Black for test at ABM-Lab York University"
+#echo "---------------------------------------------------------------"
+#echo "Make sure that this script is running on the correct device."
+#echo ""
+#read -r -p "To continue press [y] or any other key to cancel ..." key
+key='y'
 
 if [ "$key" == 'y' ]; then
 	# y pressed, do something
