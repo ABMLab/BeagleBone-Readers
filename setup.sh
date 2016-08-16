@@ -23,7 +23,7 @@ TEDITOR=nano
 
 HOME_DIR="/home/debian"
 CUR_DIR="$(pwd)"
-OPENBEACONNG_DIR="Code"
+OPENBEACONNG_DIR="GitCode"
 OPENBEACONNG_CLONE_DIR="openbeacon-ng"
 OPENBEACONNG_URL="https://github.com/meriac/openbeacon-ng.git"
 OPENBEACON_FW_DIR="openbeacon-ng/host/openbeacon-cape"
@@ -61,82 +61,123 @@ restart_device()
 }
 
 
-# Make sure only under root permission can run the script
-if [[ $EUID -ne 0 ]]; then
-	echo "This script must be run with super-user privileges. Try using \"sudo ./setup.sh\""
-	exit 1
-fi
+# function to display menus
+show_menus() {
+	# clear
+	echo "-------------------------------------------------------------"
+	echo " BeagleBone Black Setup for test at ABM-Lab York University"
+	echo "-------------------------------------------------------------"
+	echo " Make sure that this script is running on the correct device."
+	echo "-------------------------------------------------------------"
+	echo ""
+	echo "~~~~~~~~~~~~~~~~~~~~~"	
+	echo " M A I N - M E N U"
+	echo "~~~~~~~~~~~~~~~~~~~~~"
+	echo "1. Initial setup for network tools"
+	echo "2. Wifi setup"
+	echo "3. Forwarder code setup"
+	echo "4. Data sink and forwarder script setup"
+	echo "5. Reset and remove forwarder script"
+	echo "6. Check network connectivity (ping)"
+	echo "7. Reboot the device"
+	echo "8. Automatic setup: steps 1 to 4 and power off"
+	echo "0. Exit"
+	echo ""
+}
+# read input from the keyboard and take a action
+# invoke the one() when the user select 1 from the menu option.
+# invoke the two() when the user select 2 from the menu option.
+# Exit when user the user select 3 form the menu option.
+read_options(){
+	local choice
+	read -p "Enter choice [ 1 - 3] " choice
+	case $choice in
+		1) step_update ;;
+		2) step_wifi ;;
+		3) step_forwarder ;;
+		4) step_scripts ;;
+		5) step_remove_scripts ;;
+		6) step_check_network ;;
+		7) step_reboot ;;
+		8) step_auto ;;
+		0) exit 0;;
+		*) echo -e "${RED}Error...${STD}" && sleep 1
+	esac
+}
 
-echo "---------------------------------------------------------------"
-echo "Setting up BeagleBone Black for test at ABM-Lab York University"
-echo "---------------------------------------------------------------"
-echo "Make sure that this script is running on the correct device."
-echo ""
-read -r -p "To continue press [y] or any other key to cancel ..." key
+step_auto(){
+	step_update ;;
+	step_wifi ;;
+	step_forwarder ;;
+	step_scripts ;;
+	sudo shutdown now
+}
 
-if [ "$key" == 'y' ]; then
-	# y pressed, do something
-
-	NSTEP=0
-
-	read -r -p "Proceed to system update and network tools setup -recommended for the new devices- [y/n]?" key
+step_update(){
+	read -r -p "Proceed to system update - usually NOT recommended for the new devices - [y/n]?" key
 	if [ "$key" == 'y' ]; then
 		# ------------------------------------------------------------------------------------------------------------------------------------------------------
 		NSTEP=$[$NSTEP+1]
 		echo ""
-		echo "** Step $NSTEP: update the OS and install network utilities ... "
+		echo "** Step $NSTEP: updating the OS ... "
 		echo ""
 		sudo apt-get -y update
+	fi
+	read -r -p "Proceed to system and network tools setup - recommended for the new devices- [y/n]?" key
+	if [ "$key" == 'y' ]; then
+		# ------------------------------------------------------------------------------------------------------------------------------------------------------
+		NSTEP=$[$NSTEP+1]
+		echo ""
+		echo "** Step $NSTEP: install network utilities ... "
+		echo ""
 		sudo apt-get -y install network-manager
 		sudo apt-get -y install net-tools
+	fi
+	read -r -p "Proceed to dynamic datasink lookup tools setup - recommended if the datasink address is not known in a local network not over the internet - [y/n]?" key
+	if [ "$key" == 'y' ]; then
+		# ------------------------------------------------------------------------------------------------------------------------------------------------------
+		NSTEP=$[$NSTEP+1]
+		echo ""
+		echo "** Step $NSTEP: install pcap network utilities ... "
+		echo ""
 		sudo apt-get -y install libpcap-dev
 	fi
-	
+}
+
+
+step_wifi(){
 	read -r -p "Proceed to wifi network setup -recommended for the new devices- [y/n]?" key
 	if [ "$key" == 'y' ]; then
 		# ------------------------------------------------------------------------------------------------------------------------------------------------------
 		sudo bash ./wifi.sh -q
 	fi
+}
 
-	# check if the box is online 
+
+step_forwarder(){
 	# ------------------------------------------------------------------------------------------------------------------------------------------------------
 	NSTEP=$[$NSTEP+1]
 	echo ""
-	echo "** Step $NSTEP: checking the internet availability ... "
-	echo ""
-	wget -q --spider http://google.com
-	if [ $? -eq 0 ]; then
-		echo "*** Online: an internet connection detected."
-		ONLINE=1
-	else
-		echo "<!!!> Offline: no internet connection detected."
-		ONLINE=0
+	echo "** Step $NSTEP: cloning the forwarder code from git repo and compiling openbeacon_forwarder ... "
+
+	step_check_internet;;
+
+	if [ '$?' == '1' ]; then
+		echo "Cloning openbeacon from $OPENBEACONNG_URL ..."
+		rm -rf $HOME_DIR/$OPENBEACONNG_DIR /$OPENBEACONNG_CLONE_DIR
+		[ ! -d $HOME_DIR/$OPENBEACONNG_DIR ] && mkdir -p $HOME_DIR/$OPENBEACONNG_DIR || :
+		cd $HOME_DIR/$OPENBEACONNG_DIR
+		git clone $OPENBEACONNG_URL
+		cd $OPENBEACON_FW_DIR
+		echo "Compiling openbeacon_forwarder..."
+		make clean
+		make
+		cd $CUR_DIR
+		echo ""
 	fi
+}
 
-	# check if the box is online again
-	if [ $ONLINE -eq 0 ]; then
-		echo "This script needs an internet connection to continue."
-		echo "Check your connection and execute wifi.sh"
-		echo "Script terminates as no internet connection exits."
-		exit 1
-	fi
-
-
-	# ------------------------------------------------------------------------------------------------------------------------------------------------------
-	NSTEP=$[$NSTEP+1]
-	echo ""
-	echo "** Step $NSTEP: getting and compiling openbeacon_forwarder ... "
-	echo "Cloning openbeacon from $OPENBEACONNG_URL ..."
-	rm -rf $HOME_DIR/$OPENBEACONNG_DIR /$OPENBEACONNG_CLONE_DIR
-	[ ! -d $HOME_DIR/$OPENBEACONNG_DIR ] && mkdir -p $HOME_DIR/$OPENBEACONNG_DIR || :
-	cd $HOME_DIR/$OPENBEACONNG_DIR
-	git clone $OPENBEACONNG_URL
-	cd $OPENBEACON_FW_DIR
-	echo "Compiling openbeacon_forwarder..."
-	make clean
-	make
-	cd $CUR_DIR
-
+step_scripts(){
 	# ------------------------------------------------------------------------------------------------------------------------------------------------------
 	NSTEP=$[$NSTEP+1]
 	echo ""
@@ -185,20 +226,107 @@ if [ "$key" == 'y' ]; then
 
 	cd /etc/systemd/system/
 	sudo ln -f $ABMLAB_SRV_DIR/$ABMLAB_SRV  $ABMLAB_SRV
-	sudo systemctl daemon-reload 
-	sudo systemctl start $ABMLAB_SRV
-	sudo systemctl enable $ABMLAB_SRV
-	
 	sudo ln -f $ABMLAB_SRV_DIR/$ABMLABWIFI_SRV  $ABMLABWIFI_SRV
 	sudo systemctl daemon-reload 
+	sudo systemctl start $ABMLAB_SRV
+	sudo systemctl enable $ABMLAB_SRV	
+#	sudo systemctl daemon-reload 
 	sudo systemctl start $ABMLABWIFI_SRV
 	sudo systemctl enable $ABMLABWIFI_SRV
 	
 	cd $CUR_DIR
+}
+
+step_remove_scripts(){
+	cd /etc/systemd/system/
+	sudo ln -f $ABMLAB_SRV_DIR/$ABMLAB_SRV  $ABMLAB_SRV
+	sudo ln -f $ABMLAB_SRV_DIR/$ABMLABWIFI_SRV  $ABMLABWIFI_SRV
+	sudo systemctl daemon-reload 
+	sudo systemctl stop $ABMLAB_SRV
+	sudo systemctl disable $ABMLAB_SRV	
+	sudo systemctl stop $ABMLABWIFI_SRV
+	sudo systemctl disable $ABMLABWIFI_SRV
+}
+
+step_check_internet(){
+	# check if the box is online 
+	# ------------------------------------------------------------------------------------------------------------------------------------------------------
+	NSTEP=$[$NSTEP+1]
+	echo ""
+	echo "** Step $NSTEP: checking the internet availability ... "
+	echo ""
+	wget -q --spider http://google.com
+	if [ $? -eq 0 ]; then
+		echo "*** Online: an internet connection detected."
+		ONLINE=1
+	else
+		echo "<!!!> Offline: no internet connection detected."
+		ONLINE=0
+	fi
+
+	# check if the box is online again
+	if [ $ONLINE -eq 0 ]; then
+		echo "This script needs an internet connection for some steps."
+		echo "Check the connection."
+		#echo "Script terminates as no internet connection exits."
+		#exit 1
+	fi
+}
+
+step_check_network(){
+	local addrs
+	# check if the box can reach an address
+	# ------------------------------------------------------------------------------------------------------------------------------------------------------
+	NSTEP=$[$NSTEP+1]
+	echo ""
+	echo "** Step $NSTEP: checking to reach and address over the current network ... "
+	echo ""
+	echo "The IP address to check (format: 192.168.1.1):"
+		read addrs
+		sudo sed "s/$DEFAULTDATASINKWIFI/\"$NEWDATASINK\"/g" ./$ABMLABWIFI_SCR > ./tmp.sh && mv ./tmp.sh $ABMLAB_SCR_DIR/$ABMLABWIFI_SCR
+
+	ping $addrs -c5
+	if [ $? -eq 0 ]; then
+		echo "*** Successful ***"
+		return 1
+	else
+		echo "<!!!> Failed."
+		return 0
+	fi
+}
+
+step_reboot(){
+	sudo reboot
+}
+
+
+
+# Make sure only under root permission can run the script
+if [[ $EUID -ne 0 ]]; then
+	echo "This script must be run with super-user privileges. Try using \"sudo ./setup.sh\""
+	exit 1
+fi
+
+echo "---------------------------------------------------------------"
+echo "Setting up BeagleBone Black for test at ABM-Lab York University"
+echo "---------------------------------------------------------------"
+echo "Make sure that this script is running on the correct device."
+echo ""
+read -r -p "To continue press [y] or any other key to cancel ..." key
+
+if [ "$key" == 'y' ]; then
+	# y pressed, do something
+
+	NSTEP=0
+
+	# -----------------------------------
+	# Step #4: Main logic - infinite loop
+	# ------------------------------------
+	while true
+	do
+		show_menus
+		read_options
+	done	
 	
 	echo "Setup is completed."
-
-	restart_device 2
-
-	echo "You may restart the box using \"sudo reboot\" to check if everything is in order."
 fi

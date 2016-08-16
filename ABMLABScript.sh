@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # log file name
-LOGFILE="/home/debian/abmlab-log.txt"
+LOGFILE="/home/debian/abmlab-forwarder-log.txt"
 
 # assign the file descriptor 3 to a LOG file
 exec 3>> $LOGFILE
 
-DATASINK="130.63.38.107 2342"
+DATASINK="192.168.1.12 2342"
 
 RETRIES=0
 
@@ -44,7 +44,7 @@ sleep 5
 
 let RETRIES=RETRIES+1
 
-/home/debian/Code/openbeacon-ng/host/openbeacon-cape/openbeacon_forwarder $DATASINK >&3
+/home/debian/GitCode/openbeacon-ng/host/openbeacon-cape/openbeacon_forwarder $DATASINK >&3
 
 done
 
