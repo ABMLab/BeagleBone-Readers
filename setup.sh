@@ -162,6 +162,8 @@ step_forwarder(){
 
 	step_check_internet
 
+	mkdir -p $HOME_DIR/$OPENBEACONNG_DIR
+
 	if [ '$?' == '1' ]; then
 		echo "Cloning openbeacon from $OPENBEACONNG_URL ..."
 		rm -rf $HOME_DIR/$OPENBEACONNG_DIR /$OPENBEACONNG_CLONE_DIR
