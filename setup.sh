@@ -160,17 +160,21 @@ step_forwarder(){
 	echo ""
 	echo "** Step $NSTEP: cloning the forwarder code from git repo and compiling openbeacon_forwarder ... "
 
-	step_check_internet
-
 	mkdir -p $HOME_DIR/$OPENBEACONNG_DIR
 
-	if [ '$?' == '1' ]; then
+	# get the mac address
+	# sudo /sbin/ifconfig wlan | grep -Eo '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}'
+
+	step_check_internet
+
+	if [ $ONLINE == 1 ]; then
 		echo "Cloning openbeacon from $OPENBEACONNG_URL ..."
 		rm -rf $HOME_DIR/$OPENBEACONNG_DIR /$OPENBEACONNG_CLONE_DIR
 		[ ! -d $HOME_DIR/$OPENBEACONNG_DIR ] && mkdir -p $HOME_DIR/$OPENBEACONNG_DIR || :
 		cd $HOME_DIR/$OPENBEACONNG_DIR
 		git clone $OPENBEACONNG_URL
 		cd $OPENBEACON_FW_DIR
+		echo "This reader is has the RID of $RID, which is going to be set in openbeacon_forwarder.c @ 
 		echo "Compiling openbeacon_forwarder..."
 		make clean
 		make
