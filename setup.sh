@@ -238,13 +238,13 @@ step_scripts(){
 		sudo sed "s/checkInternet=\"1\"/checkInternet=\"0\"/g" ./$ABMLABWIFI_SCR > ./tmp.sh && mv ./tmp.sh ./$ABMLABWIFI_SCR
 	fi
 
-	DEFAULTDATASINKWIFI="$NEWDATASINK"
-	DEFAULTDATASINK="$NEWDATASINK $NEWPORT"
-
 	sudo sed "s/$DEFAULTDATASINK/\"$NEWDATASINK $NEWPORT\"/g" ./$ABMLAB_SCR > ./tmp.sh
 	sudo mv ./tmp.sh  ./$ABMLAB_SCR
 	sudo sed "s/$DEFAULTDATASINKWIFI/\"$NEWDATASINK\"/g" ./$ABMLABWIFI_SCR > ./tmp.sh
 	sudo mv ./tmp.sh ./$ABMLABWIFI_SCR
+
+	DEFAULTDATASINKWIFI="$NEWDATASINK"
+	DEFAULTDATASINK="$NEWDATASINK $NEWPORT"
 
 	sudo cp -f  ./$ABMLAB_SCR  $ABMLAB_SCR_DIR
 	sudo cp -f  ./$ABMLABWIFI_SCR  $ABMLAB_SCR_DIR
