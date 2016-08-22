@@ -14,6 +14,9 @@ DATASINK="192.168.1.12"
 WLAN=$(/sbin/ifquery -l | grep wlan)
 
 
+# check the internet or not
+checkInternet="1"
+
 #Maximum percent packet loss before a restart
 maxPloss=60
 
@@ -22,33 +25,42 @@ netdown=0
 
 check_current_status()
 {
-	# First make sure we can resolve google, otherwise 'ping -w' would hang
-	if $(host -W5 www.google.com > /dev/null 2>&1); then
-		# Second make sure we can resolve data sink, otherwise 'ping -w' would hang
-		if $(host -W5 $DATASINK > /dev/null 2>&1); then
-			# Initialize to a value that would force a restart
-			# (just in case ping gives an error and ploss doesn't get set)
-			ploss=101
-			# now ping data sink for 10 seconds and count packet loss
-			ploss=$(ping -q -w10 $DATASINK | grep -o "[0-9]*%" | tr -d %) > /dev/null 2>&1
-			if [ "$1" -ne "0" ] ; then
-				echo "$(date) : Network connection is up and $DATASINK is reachable with ($ploss%) packet loss." >&3
-			fi
-			if [ "$ploss" -gt "$maxPloss" ]; then
-				echo "$(date) : Network connection is up and $DATASINK is reachable but packet loss ($ploss%) is higher than expected ($maxPloss%)." >&3
-				netdown=1
-				return 1
-			fi
-			netdown=0
-			return 0
+	if [$checkInternet -eq "0"]; then
+		check_current_status_local $1
+	else
+		# First make sure we can resolve google, otherwise 'ping -w' would hang
+		if $(host -W5 www.google.com > /dev/null 2>&1); then
+			check_current_status_local $1
 		fi
-		echo "$(date) : Network connection is up but $DATASINK is unreachable." >&3
-		netdown=2
-		return 2
+		echo "$(date) : Network connection is down or $DATASINK is unreachable, restarting the network may be useful." >&3
+		netdown=3
+		return 3
 	fi
-	echo "$(date) : Network connection is down or $DATASINK is unreachable, restarting the network may be useful." >&3
-	netdown=3
-	return 3
+}
+
+check_current_status_local()
+{
+	# First make sure we can resolve data sink, otherwise 'ping -w' would hang
+	if $(host -W5 $DATASINK > /dev/null 2>&1); then
+		# Initialize to a value that would force a restart
+		# (just in case ping gives an error and ploss doesn't get set)
+		ploss=101
+		# now ping data sink for 10 seconds and count packet loss
+		ploss=$(ping -q -w10 $DATASINK | grep -o "[0-9]*%" | tr -d %) > /dev/null 2>&1
+		if [ "$1" -ne "0" ] ; then
+			echo "$(date) : Network connection is up and $DATASINK is reachable with ($ploss%) packet loss." >&3
+		fi
+		if [ "$ploss" -gt "$maxPloss" ]; then
+			echo "$(date) : Network connection is up and $DATASINK is reachable but packet loss ($ploss%) is higher than expected ($maxPloss%)." >&3
+			netdown=1
+			return 1
+		fi
+		netdown=0
+		return 0
+	fi
+	echo "$(date) : Network connection is up but $DATASINK is unreachable." >&3
+	netdown=2
+	return 2
 }
 
 

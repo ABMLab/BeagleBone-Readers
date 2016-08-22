@@ -40,6 +40,9 @@ ABMLAB_SRV_DIR=/lib/systemd
 DEFAULTDATASINK=$(grep -F  "DATASINK=" $ABMLAB_SCR | cut -d= -f2)
 DEFAULTDATASINKWIFI=$(grep -F  "DATASINK=" $ABMLABWIFI_SCR | cut -d= -f2)
 
+DEFAULTDATASINKPORT=$(grep -F  "DATASINK=" $ABMLAB_SCR | cut -d' ' -f2 | cut -d'"' -f1)
+
+
 restart_device()
 {
 	local key='y'
@@ -88,7 +91,7 @@ show_menus() {
 # Exit when user the user select 3 form the menu option.
 read_options(){
 	local choice
-	read -p "Enter choice [ 0 - 8] " choice
+	read -p "> Enter choice [ 0 - 8] " choice
 	case $choice in
 		1) step_update ;;
 		2) step_wifi ;;
@@ -123,7 +126,7 @@ step_update(){
 		echo ""
 		sudo apt-get -y update
 	fi
-	read -r -p "Proceed to system and network tools setup - recommended for the new devices- [y/n]?" key
+	read -r -p "> Proceed to system and network tools setup - recommended for the new devices- [y/n]?" key
 	if [ "$key" == 'y' ]; then
 		# ------------------------------------------------------------------------------------------------------------------------------------------------------
 		NSTEP=$[$NSTEP+1]
@@ -133,7 +136,7 @@ step_update(){
 		sudo apt-get -y install network-manager
 		sudo apt-get -y install net-tools
 	fi
-	read -r -p "Proceed to dynamic datasink lookup tools setup - recommended if the datasink address is not known in a local network not over the internet - [y/n]?" key
+	read -r -p "> Proceed to dynamic datasink lookup tools setup - recommended if the datasink address is not known in a local network not over the internet - [y/n]?" key
 	if [ "$key" == 'y' ]; then
 		# ------------------------------------------------------------------------------------------------------------------------------------------------------
 		NSTEP=$[$NSTEP+1]
@@ -146,7 +149,7 @@ step_update(){
 
 
 step_wifi(){
-	read -r -p "Proceed to wifi network setup -recommended for the new devices- [y/n]?" key
+	read -r -p "> Proceed to wifi network setup -recommended for the new devices- [y/n]?" key
 	if [ "$key" == 'y' ]; then
 		# ------------------------------------------------------------------------------------------------------------------------------------------------------
 		sudo bash ./wifi.sh -q
@@ -163,7 +166,8 @@ step_forwarder(){
 	mkdir -p $HOME_DIR/$OPENBEACONNG_DIR
 
 	# get the mac address
-	# sudo /sbin/ifconfig wlan | grep -Eo '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}'
+	WLAN_MAC=$(sudo /sbin/ifconfig wlan | grep -Eo '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
+	RID_SHORT=$(sudo /sbin/ifconfig wlan | grep -Eo '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' | cut -d':' -s -f5-6 --output-delimiter='')
 
 	step_check_internet
 
@@ -174,7 +178,24 @@ step_forwarder(){
 		cd $HOME_DIR/$OPENBEACONNG_DIR
 		git clone $OPENBEACONNG_URL
 		cd $OPENBEACON_FW_DIR
-		echo "This reader is has the RID of $RID, which is going to be set in openbeacon_forwarder.c @ 
+		echo "This reader is has the RID of $WLAN_MAC, which is going to be set in openbeacon_forwarder.c as $RID_SHORT."
+		echo "If this number is similar to any previous RIDs, please change it."
+		echo "> Do you want to change it? [y/n]" 
+		read  -r key
+		echo ""
+		if [ "$key" == 'y' ]; then
+			key='n'
+			while [ "$key" == 'n' ]; do
+				echo "> Enter a hex number ranging from 0 to FFFF:"
+				read RID_SHORT
+				echo "Is $RID_SHORT correct? [y/n]"
+				read  -r key
+				echo ""
+			done
+		fi
+		echo "This reader sends the reader id *** (RID) : $RID_SHORT ***, which is set in openbeacon_forwarder.c line ."
+		tmpstr="0x$RID_SHORT;//htons(1234)"
+		sed -i "s/htons(1234)/$tmpstr/g" openbeacon_forwarder.c
 		echo "Compiling openbeacon_forwarder..."
 		make clean
 		make
@@ -189,30 +210,43 @@ step_scripts(){
 	echo ""
 	echo "** Step $NSTEP: setting up $ABMLAB_SCR and $ABMLABWIFI_SCR scripts ... "
 	
-	echo "Change the data sink at $DEFAULTDATASINK in $ABMLAB_SCR script? (y/n)"
+	NEWDATASINK=$DEFAULTDATASINKWIFI
+	NEWPORT=$DEFAULTDATASINKPORT
+
+	echo "> Do you want to change the data sink at $DEFAULTDATASINKWIFI set in the scripts? [y/n]"
 	#read -n1 -r -p "Press [y] to change or other key to continue:" key
 	read  -r key
 	echo ""
 	if [ "$key" == 'y' ]; then
-		echo "New data sink (format: $DEFAULTDATASINK):"
+		echo "> Enter a new data sink (format: $DEFAULTDATASINKWIFI):"
 		read NEWDATASINK
-		sudo sed "s/$DEFAULTDATASINK/\"$NEWDATASINK\"/g" ./$ABMLAB_SCR > ./tmp.sh && mv ./tmp.sh  $ABMLAB_SCR_DIR/$ABMLAB_SCR
-	else
-		sudo cp -f  ./$ABMLAB_SCR  $ABMLAB_SCR_DIR
 	fi
-	
-	echo "Change the IP address at $DEFAULTDATASINKWIFI in $ABMLABWIFI_SCR script? (y/n)"
-	#read -n1 -r -p "Press [y] to change or other key to continue:" key
+
+	echo "> Do you want to change the port number: $NEWPORT set in the scripts? [y/n]"
 	read  -r key
 	echo ""
 	if [ "$key" == 'y' ]; then
-		echo "New IP address (format: $DEFAULTDATASINKWIFI):"
-		read NEWDATASINK
-		sudo sed "s/$DEFAULTDATASINKWIFI/\"$NEWDATASINK\"/g" ./$ABMLABWIFI_SCR > ./tmp.sh && mv ./tmp.sh $ABMLAB_SCR_DIR/$ABMLABWIFI_SCR
-	else
-		sudo cp -f  ./$ABMLABWIFI_SCR  $ABMLAB_SCR_DIR
+		echo "> Enter a new data sink (format: $NEWPORT):"
+		read NEWPORT
 	fi
-		
+
+	echo "> Is the IP address $NEWDATASINK a local network address to this reader? [y/n]"
+	read  -r key
+	echo ""
+	if [ "$key" == 'y' ]; then
+		echo "The network check script will only check local connection with $DEFAULTDATASINKWIFI."
+		sudo sed "s/checkInternet=\"1\"/checkInternet=\"0\"/g" ./$ABMLABWIFI_SCR > ./tmp.sh && mv ./tmp.sh ./$ABMLABWIFI_SCR
+	fi
+
+	DEFAULTDATASINKWIFI="$NEWDATASINK"
+	DEFAULTDATASINK="$NEWDATASINK $NEWPORT"
+
+	sudo sed "s/$DEFAULTDATASINK/\"$NEWDATASINK $NEWPORT\"/g" ./$ABMLAB_SCR > ./tmp.sh && mv ./tmp.sh  ./$ABMLAB_SCR
+	sudo sed "s/$DEFAULTDATASINKWIFI/\"$NEWDATASINK\"/g" ./$ABMLABWIFI_SCR > ./tmp.sh && mv ./tmp.sh ./$ABMLABWIFI_SCR
+
+	sudo cp -f  ./$ABMLAB_SCR  $ABMLAB_SCR_DIR
+	sudo cp -f  ./$ABMLABWIFI_SCR  $ABMLAB_SCR_DIR
+
 	sudo chmod u+x $ABMLAB_SCR_DIR/$ABMLAB_SCR
 	sudo chmod u+x $ABMLAB_SCR_DIR/$ABMLABWIFI_SCR
 	
