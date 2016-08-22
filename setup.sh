@@ -188,16 +188,15 @@ step_forwarder(){
 			while [ "$key" == 'n' ]; do
 				echo "> Enter a hex number ranging from 0 to FFFF:"
 				read RID_SHORT
-				echo "Is $RID_SHORT correct? [y/n]"
+				echo "> Is $RID_SHORT correct? [y/n]"
 				read  -r key
 				echo ""
 			done
 		fi
 		echo "This reader sends the reader id *** (RID) : $RID_SHORT ***, which is set in openbeacon_forwarder.c line 105."
-		tmpstr="0x$RID_SHORT;//htons(1234)"
-		tmpstr="${tmpstr%\"}"
-		tmpstr="${tmpstr#\"}"
-		sed -i 's/htons(1234)/$tmpstr/g' openbeacon_forwarder.c
+		oldstr="htons(1234)"
+		tmpstr="0x$RID_SHORT;\/\/htons(1234)"
+		sed -i.bak s/$oldstr/$tmpstr/g openbeacon_forwarder.c
 		echo "Compiling openbeacon_forwarder..."
 		make clean
 		make
