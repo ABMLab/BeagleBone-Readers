@@ -193,9 +193,11 @@ step_forwarder(){
 				echo ""
 			done
 		fi
-		echo "This reader sends the reader id *** (RID) : $RID_SHORT ***, which is set in openbeacon_forwarder.c line ."
+		echo "This reader sends the reader id *** (RID) : $RID_SHORT ***, which is set in openbeacon_forwarder.c line 105."
 		tmpstr="0x$RID_SHORT;//htons(1234)"
-		sed -i "s/htons(1234)/$tmpstr/g" openbeacon_forwarder.c
+		tmpstr="${tmpstr%\"}"
+		tmpstr="${tmpstr#\"}"
+		sed -i 's/htons(1234)/$tmpstr/g' openbeacon_forwarder.c
 		echo "Compiling openbeacon_forwarder..."
 		make clean
 		make
